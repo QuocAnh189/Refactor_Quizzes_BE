@@ -10,6 +10,6 @@ export const PATHS = {
   PROVIDER: `${API}/providers`,
   PLAYERRESULT: `${API}/player-results`,
   QUESTION: `${API}/questions`,
-  QUIZ: `${API}/quizs`,
+  QUIZ: `${API}/quizzes`,
   USER: `${API}/users`,
 };

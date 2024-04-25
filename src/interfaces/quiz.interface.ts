@@ -12,7 +12,7 @@ export interface IQuiz {
   grade: ObjectId;
   tags: string[];
   numberOfQuestions: number;
-  pointPerQuestion: number;
+  pointsPerQuestion: number;
   ressourceId?: ObjectId;
   likes: ObjectId[];
   comments: ObjectId[];

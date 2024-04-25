@@ -3,7 +3,6 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-dotenv.config();
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import 'reflect-metadata';
@@ -15,6 +14,7 @@ import { defaultErrorHandler } from './middlewares';
 import route from './routes';
 import { logger } from './utils/logger';
 
+dotenv.config();
 connectDB()
   .then(connect => {
     logger.info(`Database connected:  ${connect.connection.host} ${connect.connection.name}`);

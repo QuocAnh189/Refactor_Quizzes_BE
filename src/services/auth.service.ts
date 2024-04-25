@@ -7,8 +7,6 @@ import { HTTP_STATUS } from '@/constants';
 import { HttpException } from '@/exceptions/httpException';
 import { RefreshToken, User } from '@/models';
 
-//model
-
 const generateAccessToken = async (data: any) => {
   try {
     const token = jwt.sign(data, process.env.ACCESS_TOKEN_SECRET, {
@@ -66,114 +64,90 @@ const authorizeInfoUser = async (user: any) => {
 @Service()
 class AuthService {
   public async checkEmail(data: any): Promise<any> {
-    try {
-      const { mail } = data;
-
-      const user = await User.findOne({ mail });
-      if (user) {
-        throw new HttpException(HTTP_STATUS.UNPROCESSABLE_ENTITY, 'Email already exists');
-      }
-
-      return 'Email right';
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    const { email } = data;
+    const user = await User.findOne({ email });
+    if (user) {
+      throw new HttpException(HTTP_STATUS.UNPROCESSABLE_ENTITY, 'Email already exists');
     }
+
+    return 'Email right';
   }
 
   public async checkUserName(data: any): Promise<any> {
-    try {
-      const { userName } = data;
+    const { userName } = data;
 
-      const user = await User.findOne({ userName });
-      if (user) {
-        throw new HttpException(HTTP_STATUS.UNPROCESSABLE_ENTITY, 'userName already exists');
-      }
-
-      return 'userName right';
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    const user = await User.findOne({ userName });
+    if (user) {
+      throw new HttpException(HTTP_STATUS.UNPROCESSABLE_ENTITY, 'userName already exists');
     }
+
+    return 'userName right';
   }
 
   public async signUp(data: any): Promise<any> {
-    try {
-      const { avatar, firstName, lastName, userType, userName, mail, password, workspace } = data;
+    const { avatar, firstName, lastName, userType, userName, email, password, workspace } = data;
 
-      const hashedPassword = await bcrypt.hash(password + '', 10);
-      const user = await User.create({
-        avatar,
-        mail,
-        userName,
-        userType,
-        firstName,
-        lastName,
-        emailToken: crypto.randomBytes(64).toString('hex'),
-        isVerified: false,
-        password: hashedPassword,
-        point: 0,
-        workspace,
-        follows: [],
-        friends: [],
-      });
+    const hashedPassword = await bcrypt.hash(password + '', 10);
+    const user: any = await User.create({
+      avatar,
+      email,
+      userName,
+      userType,
+      firstName,
+      lastName,
+      emailToken: crypto.randomBytes(64).toString('hex'),
+      isVerified: false,
+      password: hashedPassword,
+      point: 0,
+      workspace,
+      follows: [],
+      friends: [],
+    });
 
-      if (!user) {
-        throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'User data is not valid');
-      }
-
-      const { accessToken, refreshToken } = await authorizeInfoUser(user);
-
-      const userWithoutPassword = { ...user };
-      delete userWithoutPassword.password;
-
-      return {
-        user: userWithoutPassword,
-        accessToken,
-        refreshToken,
-      };
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    if (!user) {
+      throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'User data is not valid');
     }
+
+    const { accessToken, refreshToken } = await authorizeInfoUser(user);
+
+    const userWithoutPassword = { ...user._doc };
+    delete userWithoutPassword.password;
+
+    return {
+      user: userWithoutPassword,
+      accessToken,
+      refreshToken,
+    };
   }
 
   public async signIn(data: any): Promise<any> {
-    try {
-      const { mail, password } = data;
-      const user = await User.findOne({ mail });
+    const { email, password } = data;
+    const user: any = await User.findOne({ email });
 
-      // if (!EmailFor(mail)) {
-      //   res.status(httpConstants.UNAUTHORIZED);
-      //   throw new Error('Email does not format');
-      // }
-
-      if (!user) {
-        throw new HttpException(HTTP_STATUS.UNAUTHORIZED, 'Account not exist');
-      }
-
-      if (user && !user.password) {
-        throw new HttpException(HTTP_STATUS.UNAUTHORIZED, 'Email is auth account');
-      }
-
-      const checkPass = await bcrypt.compare(password + '', user.password);
-
-      if (!checkPass) {
-        throw new HttpException(HTTP_STATUS.UNAUTHORIZED, 'Wrong password');
-      }
-
-      if (checkPass) {
-        const { accessToken, refreshToken } = await authorizeInfoUser(user);
-
-        const userWithoutPassword = { ...user };
-        delete userWithoutPassword.password;
-
-        return {
-          user: userWithoutPassword,
-          accessToken,
-          refreshToken,
-        };
-      }
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    if (!user) {
+      throw new HttpException(HTTP_STATUS.UNAUTHORIZED, 'Account not exist');
     }
+
+    if (user && !user.password) {
+      throw new HttpException(HTTP_STATUS.UNAUTHORIZED, 'Email is auth account');
+    }
+
+    const checkPass = await bcrypt.compare(password + '', user.password);
+
+    if (!checkPass) {
+      throw new HttpException(HTTP_STATUS.UNAUTHORIZED, 'Wrong password');
+    }
+
+    const { accessToken, refreshToken } = await authorizeInfoUser(user);
+
+    const userWithoutPassword = { ...user._doc };
+    delete userWithoutPassword.password;
+
+    return {
+      user: userWithoutPassword,
+      accessToken,
+      refreshToken,
+    };
   }
 
   public async signInSocial(): Promise<any> {
@@ -184,54 +158,45 @@ class AuthService {
   }
 
   public async requestRefreshToken(data: any): Promise<any> {
-    try {
-      const { refreshToken } = data;
-      if (!refreshToken) {
-        throw new HttpException(HTTP_STATUS.SERVER_ERROR, "you're not authenticated");
-      }
-
-      const refreshTokenFromDB = await RefreshToken.findOne({
-        token: refreshToken,
-      });
-
-      if (!refreshTokenFromDB) {
-        throw new HttpException(HTTP_STATUS.NOT_FOUND, 'Cannot find refresh token');
-      }
-
-      jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-        if (err) {
-          throw new HttpException(HTTP_STATUS.UNAUTHORIZED, err);
-        }
-        console.log(refreshTokenFromDB.user_id.toString(), decoded);
-        if (refreshTokenFromDB.user_id.toString() !== decoded.user.id) {
-          throw new HttpException(HTTP_STATUS.NOT_FOUND, 'User is not found');
-        }
-        const newAccessToken = generateAccessToken({
-          user: decoded.user,
-        });
-
-        return {
-          accessToken: newAccessToken,
-        };
-      });
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    const { refreshToken } = data;
+    if (!refreshToken) {
+      throw new HttpException(HTTP_STATUS.SERVER_ERROR, "you're not authenticated");
     }
+
+    const refreshTokenFromDB = await RefreshToken.findOne({
+      token: refreshToken,
+    });
+
+    if (!refreshTokenFromDB) {
+      throw new HttpException(HTTP_STATUS.NOT_FOUND, 'Cannot find refresh token');
+    }
+
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        throw new HttpException(HTTP_STATUS.UNAUTHORIZED, err);
+      }
+      if (refreshTokenFromDB.user_id.toString() !== decoded.user.id) {
+        throw new HttpException(HTTP_STATUS.NOT_FOUND, 'User is not found');
+      }
+      const newAccessToken = generateAccessToken({
+        user: decoded.user,
+      });
+
+      return {
+        accessToken: newAccessToken,
+      };
+    });
   }
 
   public async signOut(id: string): Promise<any> {
-    try {
-      const result = await RefreshToken.deleteMany({
-        user_id: id,
-      });
-      if (!result) {
-        throw new HttpException(HTTP_STATUS.SERVER_ERROR, `User with id ${id} has been logged out`);
-      }
-
-      return 'Logged out user';
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    const result = await RefreshToken.deleteMany({
+      user_id: id,
+    });
+    if (!result) {
+      throw new HttpException(HTTP_STATUS.SERVER_ERROR, `User with id ${id} has been logged out`);
     }
+
+    return 'Logged out user';
   }
 }
 

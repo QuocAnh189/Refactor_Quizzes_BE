@@ -6,7 +6,7 @@ import { User } from '@/models';
 
 const { TokenExpiredError } = jwt;
 
-const checkEmailExist = asyncHandler(async (req, res) => {
+const checkEmail = asyncHandler(async (req, res) => {
   const { mail } = req.body;
 
   const user = await User.findOne({ mail });
@@ -161,7 +161,7 @@ const localVariables = (req, res, next) => {
 };
 
 export {
-  checkEmailExist,
+  checkEmail,
   checkUserName,
   verifyAccessToken,
   verifyAdmin,

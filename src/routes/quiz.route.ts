@@ -144,7 +144,7 @@ class QuizRoute implements Routes {
      *        description: Internal server error
      *
      */
-    this.router.get('/:id', wrapRequestHandler(this.quiz.getQuiz));
+    this.router.get('/:id', wrapRequestHandler(this.quiz.getQuizById));
 
     /**
      * @openapi
@@ -300,7 +300,7 @@ class QuizRoute implements Routes {
      *        description: Internal server error
      *
      */
-    this.router.put('/:id', wrapRequestHandler(this.quiz.updateQuiz));
+    this.router.patch('/:id', wrapRequestHandler(this.quiz.updateQuiz));
 
     /**
      * @openapi

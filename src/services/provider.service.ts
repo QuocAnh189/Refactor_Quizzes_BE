@@ -3,6 +3,7 @@ import { HttpException } from '@/exceptions/httpException';
 import { Service } from 'typedi';
 import nodemailer from 'nodemailer';
 import Mailgen from 'mailgen';
+import cloudinary from '@/configs/cloudinary.config';
 
 var transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -27,6 +28,18 @@ let MailGenerator = new Mailgen({
 
 @Service()
 class ProviderService {
+  public async deleteImage(public_id: string): Promise<any> {
+    try {
+      const res = await cloudinary.uploader.destroy(public_id);
+      if (!res) {
+        throw new HttpException(HTTP_STATUS.NOT_FOUND, `No public_id with id: ${public_id}`);
+      }
+      return res;
+    } catch (error) {
+      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    }
+  }
+
   public async registerMail(): Promise<any> {
     try {
     } catch (error) {

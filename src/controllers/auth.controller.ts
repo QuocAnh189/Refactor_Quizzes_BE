@@ -37,7 +37,6 @@ class AuthController {
     try {
       const data = req.body;
       const result = await this.auth.signUp(data);
-
       if (result) {
         res.cookie('refreshToken', result.refreshToken, {
           httpOnly: true,
@@ -46,7 +45,7 @@ class AuthController {
           sameSite: 'strict',
         });
 
-        return result;
+        res.status(HTTP_STATUS.OK).json(result);
       }
     } catch (error) {
       next(error);
@@ -66,7 +65,7 @@ class AuthController {
           sameSite: 'strict',
         });
 
-        return result;
+        res.status(HTTP_STATUS.OK).json(result);
       }
     } catch (error) {
       next(error);
@@ -105,6 +104,7 @@ class AuthController {
       const result = await this.auth.signOut(id);
 
       if (result) {
+        res.cookie('refreshToken', '');
         res.status(HTTP_STATUS.OK).json(result);
       }
     } catch (error) {

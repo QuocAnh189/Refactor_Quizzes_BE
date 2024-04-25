@@ -50,21 +50,14 @@ const findQuizByCreator = async creatorId => {
 
 @Service()
 class QuizService {
-  public async getQuiz(id: string): Promise<any> {
-    try {
-      const quiz = await findQuizById(id);
-      if (!quiz) {
-        throw new HttpException(HTTP_STATUS.NOT_FOUND, 'quiz not found');
-      }
+  public async getQuizById(id: string): Promise<any> {
+    const quiz = await Quiz.findById(id);
 
-      if (quiz.isDraft) {
-        throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'quiz draftis draf');
-      }
-
-      return quiz;
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    if (!quiz) {
+      throw new HttpException(HTTP_STATUS.NOT_FOUND, 'Quiz not found');
     }
+
+    return quiz;
   }
 
   public async getQuizzes(): Promise<any> {
@@ -102,11 +95,24 @@ class QuizService {
     }
   }
 
-  public async createQuiz(): Promise<any> {
-    try {
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+  public async createQuiz(data: any): Promise<any> {
+    const { name, description, isPublic, creatorId } = data;
+
+    const findQuiz = await Quiz.findOne({ name, creatorId });
+    if (findQuiz) {
+      throw new HttpException(HTTP_STATUS.UNPROCESSABLE_ENTITY, 'Quiz already exists');
     }
+
+    const newQuiz = new Quiz({
+      name,
+      description,
+      isPublic,
+      creatorId,
+    });
+
+    const createdQuiz = await Quiz.create(newQuiz);
+
+    return createdQuiz;
   }
 
   public async importQuiz(): Promise<any> {
@@ -117,136 +123,51 @@ class QuizService {
   }
 
   public async updateQuiz(id: string, data: any): Promise<any> {
-    try {
-      const {
-        _id,
-        name,
-        creator,
-        description,
-        backgroundImage,
-        isPublic,
-        tags,
-        numberOfQuestions,
-        pointsPerQuestion,
-        likesCount,
-        questionList,
-        category,
-        grade,
-        isDraft,
-      } = data;
+    const { name, description, coverImage, isPublic, tags, category, grade, pointsPerQuestion } = data;
 
-      const QuizWithIdParam = await Quiz.findById(id).lean();
-      if (!QuizWithIdParam) {
-        throw new HttpException(HTTP_STATUS.NOT_FOUND, `No quiz with id: ${id}`);
-      }
-
-      const QuizWithIdFromBody = await Quiz.findById(_id).lean();
-      if (!QuizWithIdFromBody) {
-        throw new HttpException(HTTP_STATUS.NOT_FOUND, `No quiz with id: ${_id}`);
-      }
-
-      if (!name) {
-        throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Name is required');
-      }
-
-      if (!description) {
-        throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Description is required');
-      }
-
-      if (pointsPerQuestion === null || pointsPerQuestion === undefined || pointsPerQuestion === '') {
-        throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Points per question is required');
-      }
-
-      if (typeof pointsPerQuestion === 'string') {
-        throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Points per question must be a number');
-      }
-
-      if (pointsPerQuestion === 0) {
-        throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Points per question must be greater than 0');
-      }
-
-      if (!tags) {
-        throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Tags is required');
-      }
-
-      if (questionList.length === 0) {
-        throw new HttpException(HTTP_STATUS.NOT_FOUND, 'Question List must be not empty');
-      }
-
-      const categoryResult = await Category.findOne({
-        name: category.name,
-      }).lean();
-      const gradeResult = await Grade.findOne({ name: grade.name }).lean();
-
-      if (!categoryResult) {
-        throw new HttpException(HTTP_STATUS.NOT_FOUND, 'Category not found');
-      }
-      if (!gradeResult) {
-        throw new HttpException(HTTP_STATUS.NOT_FOUND, 'Grade not found');
-      }
-
-      const quiz = new Quiz({
-        name,
-        creator: creator._id,
-        likesCount,
-        description,
-        backgroundImage,
-        isPublic,
-        tags,
-        numberOfQuestions,
-        pointsPerQuestion,
-        // likesCount,
-        questionList: [],
-        category: categoryResult._id,
-        grade: gradeResult._id,
-        isDraft,
-      });
-
-      let SavedQuestionList = questionList.map(async item => {
-        if (item._id !== undefined && item._id !== null && item._id !== '') {
-          const question = await Question.findByIdAndUpdate(item._id, item);
-          return question;
-        } else {
-          const newQuestion = new Question({
-            optionQuestion: item.optionQuestion,
-            creator: creator._id,
-            questionIndex: item.questionIndex,
-            tags: item.tags,
-            isPublic: true,
-            questionType: item.questionType,
-            pointType: item.pointType,
-            answerTime: item.answerTime,
-            backgroundImage: item.backgroundImage,
-            content: item.content,
-            answerList: item.answerList,
-            maxCorrectAnswer: item.maxCorrectAnswer,
-            correctAnswerCount: item.correctAnswerCount,
-            answerCorrect: item.answerCorrect,
-          });
-
-          const question = await newQuestion.save();
-          return question;
-        }
-      });
-
-      // await Promise.all(SavedQuestionList).then(question => {
-      //   question.forEach(item => {
-      //     quiz.questionList.push(item._id);
-      //   });
-      // });
-      // // quiz._id = new ObjectId(_id);
-      // if (quiz.numberOfQuestions !== quiz.questionList.length) quiz.numberOfQuestions = quiz.questionList.length;
-
-      // quiz.isDraft = quiz.questionList.length === 0 ? true : false;
-
-      const updatedQuiz = await Quiz.findByIdAndUpdate(id, quiz, {
-        new: true,
-      });
-
-      return updatedQuiz;
-    } catch (error) {
-      throw new HttpException(HTTP_STATUS.SERVER_ERROR, error.message);
+    const findQuiz = await Quiz.findById(id);
+    if (!findQuiz) {
+      throw new HttpException(HTTP_STATUS.NOT_FOUND, `No quiz with id: ${id}`);
     }
+
+    if (!name) {
+      throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Name is required');
+    }
+
+    if (!description) {
+      throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Description is required');
+    }
+
+    if (!pointsPerQuestion) {
+      throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Points per question is required');
+    }
+
+    if (pointsPerQuestion === 0) {
+      throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Points per question must be greater than 0');
+    }
+
+    if (!tags) {
+      throw new HttpException(HTTP_STATUS.BAD_REQUEST, 'Tags is required');
+    }
+
+    const newQuiz = new Quiz({
+      _id: id,
+      name,
+      description,
+      coverImage,
+      isPublic: isPublic ? true : false,
+      category,
+      grade,
+      pointsPerQuestion,
+      tags,
+    });
+
+    const updatedQuiz = await Quiz.findOneAndUpdate({ _id: id }, newQuiz, {
+      new: true,
+      runValidators: true,
+    });
+
+    return updatedQuiz;
   }
 
   public async deleteQuiz(id: string): Promise<any> {

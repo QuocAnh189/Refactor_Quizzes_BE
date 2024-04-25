@@ -7,6 +7,8 @@ import { Routes } from '@/interfaces';
 import AuthController from '@/controllers/auth.controller';
 import { wrapRequestHandler } from '@/utils/handle';
 
+import { checkEmail, checkUserName } from '@/middlewares';
+
 class AuthRoute implements Routes {
   public router = Router();
   public auth = new AuthController();
@@ -40,7 +42,7 @@ class AuthRoute implements Routes {
      *        description: Internal server error
      *
      */
-    this.router.post('/check-email', wrapRequestHandler(this.auth.signUp));
+    this.router.post('/check-email', wrapRequestHandler(this.auth.checkEmail));
 
     /**
      * @openapi
@@ -66,7 +68,7 @@ class AuthRoute implements Routes {
      *        description: Internal server error
      *
      */
-    this.router.post('/check-username', wrapRequestHandler(this.auth.signUp));
+    this.router.post('/check-username', wrapRequestHandler(this.auth.checkUserName));
 
     /**
      * @openapi
@@ -144,7 +146,7 @@ class AuthRoute implements Routes {
      *        description: Internal server error
      *
      */
-    this.router.post('/signin', wrapRequestHandler(this.auth.signIn));
+    this.router.post('/sign-in', wrapRequestHandler(this.auth.signIn));
 
     /**
      * @openapi
@@ -196,7 +198,7 @@ class AuthRoute implements Routes {
      *        description: Internal server error
      *
      */
-    this.router.post('/signout/:id', wrapRequestHandler(this.auth.signOut));
+    this.router.post('/sign-out/:id', wrapRequestHandler(this.auth.signOut));
   }
 }
 
